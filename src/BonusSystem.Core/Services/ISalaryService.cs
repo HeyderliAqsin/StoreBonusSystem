@@ -5,6 +5,6 @@ namespace BonusSystem.Core.Services
 {
     public interface ISalaryService
     {
-        Task<Result<decimal,DomainError>> CalculateSalaryForMonth(Guid employeeId, DateTime startDate, DateTime endDate);
+        Task<Result<decimal,DomainError>> CalculateSalaryAsync(Guid employeeId, DateTime startDate, DateTime endDate);
     }
 }

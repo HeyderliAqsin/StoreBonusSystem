@@ -12,6 +12,9 @@ namespace BonusSystem.DataAccess
     {
         public static IServiceCollection AddDataAccess(this IServiceCollection services,IConfiguration configuration)
         {
+            services.AddDbContext<StoreBonusSystemDbContext>(options =>
+            options.UseSqlServer(configuration.GetConnectionString("BonusSystemDb")));
+
             services.AddScoped<DbContext,StoreBonusSystemDbContext>();
             #region Register all repositories
             services.AddScoped<IEmployeeRepository, EmployeeRepository>();

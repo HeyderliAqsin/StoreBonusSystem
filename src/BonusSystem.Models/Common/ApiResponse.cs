@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using BonusSystem.Models.Entities;
+using System.Net;
 
 namespace BonusSystem.Models.Common
 {

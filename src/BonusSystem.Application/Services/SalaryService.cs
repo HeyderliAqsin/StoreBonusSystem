@@ -1,4 +1,5 @@
-﻿using BonusSystem.Core.Repositories.Special;
+﻿using BonusSystem.Core.Exceptions;
+using BonusSystem.Core.Repositories.Special;
 using BonusSystem.Core.Services;
 using BonusSystem.Models.Entities;
 using CSharpFunctionalExtensions;
@@ -11,7 +12,7 @@ namespace BonusSystem.Application.Services
         private readonly IStoreRepository _storeRepository;
         private readonly IGradeRepository _gradeRepository;
 
-        public SalaryService(IEmployeeRepository employeeRepository, IGradeRepository gradeRepository, 
+        public SalaryService(IEmployeeRepository employeeRepository, IGradeRepository gradeRepository,
             IStoreRepository storeRepository)
         {
             _employeeRepository = employeeRepository;
@@ -19,33 +20,44 @@ namespace BonusSystem.Application.Services
             _storeRepository = storeRepository;
         }
 
-         public async Task<Result<decimal,DomainError>> CalculateSalaryForMonth(Guid employeeId, DateTime transferDate, DateTime endDate)
+        public async Task<Result<decimal, DomainError>> CalculateSalaryAsync(Guid employeeId, DateTime transferDate, DateTime endDate)
         {
-            var employee = await _employeeRepository.GetFirstAsync(m => m.Id == employeeId);
-            if (employee is null)
+            try
             {
-                return Result.Failure<decimal, DomainError>(DomainError.NotFound("Employee is not found"));
+                var employee = await _employeeRepository.GetFirstAsync(m => m.Id == employeeId);
+                if (employee is null)
+                {
+                    return Result.Failure<decimal, DomainError>(DomainError.NotFound("Employee is not found"));
+                }
+                int daysWorkedInOldStore = CalculateDaysWorkedInOldStore(employee, transferDate, endDate);
+                int daysWorkedInNewStore = CalculateDaysWorkedInNewStore(employee, transferDate, endDate);
+                if (daysWorkedInOldStore == 0 && daysWorkedInNewStore == 0)
+                {
+                    return Result.Failure<decimal, DomainError>(DomainError.NotFound("Employee did not work in this period"));
+                }
+                int daysInMonth = DateTime.DaysInMonth(transferDate.Year, transferDate.Month);
+                decimal dailySalary = employee.BaseSalary / daysInMonth;
+
+                decimal salaryInOldStore = dailySalary * daysWorkedInOldStore;
+                decimal salaryInNewStore = dailySalary * daysWorkedInNewStore;
+                var totalSalary = salaryInOldStore + salaryInNewStore;
+
+                totalSalary += await CalculateGradeBonus(employee.StoreId);
+
+                return Result.Success<decimal, DomainError>(totalSalary);
+
             }
-            int daysWorkedInOldStore = CalculateDaysWorkedInOldStore(employee, transferDate, endDate);
-            int daysWorkedInNewStore = CalculateDaysWorkedInNewStore(employee, transferDate, endDate);
-            if(daysWorkedInOldStore == 0 && daysWorkedInNewStore == 0)
+            catch (InvalidCodeException exp)
             {
-                return Result.Failure<decimal, DomainError>(DomainError.NotFound("Employee did not work in this period"));
+                return Result.Failure<decimal, DomainError>(DomainError.BadRequest(exp.Message));
             }
-            int daysInMonth = DateTime.DaysInMonth(transferDate.Year, transferDate.Month);
-            decimal dailySalary = employee.BaseSalary / daysInMonth;  
-
-            decimal salaryInOldStore = dailySalary * daysWorkedInOldStore;
-            decimal salaryInNewStore = dailySalary * daysWorkedInNewStore;
-            var totalSalary = salaryInOldStore + salaryInNewStore;
-           
-            totalSalary += await CalculateGradeBonus(employee.StoreId);
-
-            return Result.Success<decimal, DomainError>(totalSalary);
-
+            catch (NotFoundException exp)
+            {
+                return Result.Failure<decimal, DomainError>(DomainError.NotFound(exp.Message));
+            }
         }
 
-        private int CalculateDaysWorkedInOldStore(Employee employee,DateTime transferDate, DateTime endDate)
+        private int CalculateDaysWorkedInOldStore(Employee employee, DateTime transferDate, DateTime endDate)
         {
             if (employee.CreateDate > transferDate)
             {
@@ -60,7 +72,7 @@ namespace BonusSystem.Application.Services
         {
             if (employee.CreateDate > endDate)
             {
-                return 0; 
+                return 0;
             }
             DateTime startWorkDate = transferDate > employee.CreateDate ? transferDate : employee.CreateDate;
             return (endDate - startWorkDate).Days + 1;
@@ -78,7 +90,7 @@ namespace BonusSystem.Application.Services
                     break;
                 case GradeType.Percentage:
                     bonus = (store.Sales * gradeType.Percentage / 100);
-                    bonus /= store.Employees.Count; 
+                    bonus /= store.Employees.Count;
                     break;
                 case GradeType.Threshold:
                     bonus = CalculateThresholdBonus(store.Sales, gradeType.Thresholds);

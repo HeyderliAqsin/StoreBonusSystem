@@ -1,9 +1,18 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace BonusSystem.DataAccess.Persistence
 {
-    public class StoreBonusSystemDbContext() : DbContext()
+    public class StoreBonusSystemDbContext : DbContext
     {
+        private readonly IConfiguration _configuration;
+
+        public StoreBonusSystemDbContext(DbContextOptions<StoreBonusSystemDbContext> options, IConfiguration configuration)
+            : base(options)
+        {
+            _configuration = configuration;
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -12,9 +21,11 @@ namespace BonusSystem.DataAccess.Persistence
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseSqlServer(@"Server=.\;Database=BonusSystem;Trusted_Connection=true; encrypt=false;MultipleActiveResultSets=true");
-
+            if (!optionsBuilder.IsConfigured)
+            {
+                var connectionString = _configuration.GetConnectionString("BonusSystemDb");
+                optionsBuilder.UseSqlServer(connectionString);
+            }
         }
     }
 }
