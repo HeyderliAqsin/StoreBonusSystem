@@ -56,7 +56,7 @@ if (!builder.Environment.IsProduction())
 
 app.MapControllers();
 
-//app.UseGlobalErrorHandling();
+app.UseGlobalErrorHandling();
 app.UseDbTransaction();
 app.UseBusinessLogic();
 
