@@ -1,12 +1,14 @@
 ﻿using BonusSystem.Models.Common;
-
 namespace BonusSystem.Models.Entities
 {
     public class Store : BaseEntity<Guid>
     {
-        public required string StoreName { get; set; }
-        public Warehouse? ParentWareHouse { get; set; }
-        public List<Employee>? Employees { get; set; }
-        public Grade? Grade { get; set; }
+        public string Name { get; set; }
+        public decimal Sales { get; set; }
+        public Guid GradeId { get; set; }
+        public Grade StoreGrade { get; set; }
+        public List<Employee> Employees { get; set; } = new List<Employee>();
+        public Guid WarehouseId { get; set; }
+        public Warehouse Warehouse { get; set; }
     }
 }

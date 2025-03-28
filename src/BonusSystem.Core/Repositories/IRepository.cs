@@ -3,13 +3,13 @@ using System.Linq.Expressions;
 
 namespace BonusSystem.Core.Repositories
 {
-    public interface IRepository <T> where T : class
+    public interface IRepository<T> where T : class
     {
-        IQueryable<T> GetAll(Expression<Func<T ,bool>> expression=null);
-        T GetFirst(Expression<Func<T, bool>> expression=null,bool throwException=true);
-        T Add(T entity);
-        T Edit(T entity,Action<EntityEntry<T>> rules=null);
-        void Delete(T entity);
-        int Save();
+        Task<IQueryable<T>> GetAllAsync(Expression<Func<T, bool>> expression = null);
+        Task<T> GetFirstAsync(Expression<Func<T, bool>> expression = null, bool throwException = true);
+        Task<T> AddAsync(T entity);
+        Task<T> EditAsync(T entity, Action<EntityEntry<T>> rules = null);
+        Task DeleteAsync(T entity);
+        Task<int> SaveAsync();
     }
 }

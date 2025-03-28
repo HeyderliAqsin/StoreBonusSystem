@@ -4,6 +4,6 @@ namespace BonusSystem.Models.Entities
 {
     public class Position:BaseEntity<Guid>
     {
-        public string? Title { get; set; }
+        public string Name { get; set; }
     }
 }

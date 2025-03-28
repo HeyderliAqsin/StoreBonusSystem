@@ -6,30 +6,24 @@ using System.Linq.Expressions;
 
 namespace BonusSystem.Core.Repositories
 {
-    public abstract class Repository<T> : IRepository<T> where T : class, new()
+    public abstract class Repository<T> : IRepository<T> where T : class
     {
         private readonly DbContext _dbContext;
         private readonly DbSet<T> _dbSet;
-        protected Repository(DbContext dbContext, DbSet<T> dbSet)
+        protected Repository(DbContext dbContext)
         {
             _dbContext = dbContext;
-            _dbSet = dbSet;
+            _dbSet = dbContext.Set<T>();
         }
         protected DbContext DbContext { get => _dbContext; }
         protected DbSet<T> DbSet { get => _dbSet; }
 
-        public T Add(T entity)
+        public async Task<T> AddAsync(T entity)
         {
             _dbSet.Add(entity);
             return entity;
         }
-
-        public void Delete(T entity)
-        {
-            _dbSet.Remove(entity);
-        }
-
-        public IQueryable<T> GetAll(Expression<Func<T, bool>> expression = null)
+        public async Task<IQueryable<T>> GetAllAsync(Expression<Func<T, bool>> expression = null)
         {
             var queryDb = _dbSet.AsQueryable();
 
@@ -37,26 +31,18 @@ namespace BonusSystem.Core.Repositories
                 queryDb = queryDb.Where(expression);
             return queryDb;
         }
-
-        public T GetFirst(Expression<Func<T, bool>> expression = null, bool throwException=true)
+        public async Task<T> GetFirstAsync(Expression<Func<T, bool>> expression = null, bool throwException = true)
         {
             var queryDb = _dbSet.AsQueryable();
 
             if (expression is not null)
                 queryDb = queryDb.Where(expression);
-            var entity= queryDb.FirstOrDefault();
+            var entity = queryDb.FirstOrDefault();
             if (entity is null && throwException)
-                throw new NotFoundException("RECORD_NOT_FOUND");
+                throw new NotFoundException($"{typeof(T).Name} : RECORD_NOT_FOUND");
             return entity;
-
         }
-
-        public int Save()
-        {
-            return _dbContext.SaveChanges();
-        }
-
-        public T Edit(T entity, Action<EntityEntry<T>> rules = null)
+        public async Task<T> EditAsync(T entity, Action<EntityEntry<T>> rules = null)
         {
             var entry = _dbContext.Entry(entity);
             if (rules is null)
@@ -75,6 +61,14 @@ namespace BonusSystem.Core.Repositories
             rules(entry);
             entry.State = EntityState.Modified;
             return entity;
+        }
+        public async Task DeleteAsync(T entity)
+        {
+            _dbSet.Remove(entity);
+        }
+        public async Task<int> SaveAsync()
+        {
+            return _dbContext.SaveChanges();
         }
     }
 }

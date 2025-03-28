@@ -4,7 +4,7 @@ namespace BonusSystem.Models.Entities
 {
     public class Company : BaseEntity<Guid>
     {
-        public required string CompanyName { get; set; }
-        public List<Warehouse>? Warehouses { get; set; }
+        public string Name { get; set; }
+        public List<Warehouse> Warehouses { get; set; } = new List<Warehouse>();
     }
 }
